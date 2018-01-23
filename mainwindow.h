@@ -10,6 +10,7 @@ namespace Ui {
 class MainWindow;
 }
 
+class QCustomPlot;
 
 class MainWindow : public QMainWindow
 {
@@ -21,18 +22,14 @@ public:
     ~MainWindow();
 
     HidDevice *hidDevice;
-
+    void setPlotStyle(QCustomPlot *plot);
 
 private slots:
     void on_pbConnect_clicked();
 
     void on_pbDisconnect_clicked();
 
-    void on_pbApply_clicked();
-
-    void on_pbStart_clicked();
-
-    void on_pbStop_clicked();
+    void on_pbStartStop_clicked();
 
 private:
     Ui::MainWindow *ui;

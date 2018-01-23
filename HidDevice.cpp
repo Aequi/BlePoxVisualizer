@@ -48,7 +48,7 @@ std::string HidDevice::intToHex(uint16_t num)
 
 bool HidDevice::open(uint16_t vid, uint16_t pid)
 {
-    std::string str("\\\\?\\hid#vid_" + CorsairMouse::intToHex(vid) + "&pid_" + CorsairMouse::intToHex(pid));
+    std::string str("\\\\?\\hid#vid_" + HidDevice::intToHex(vid) + "&pid_" + HidDevice::intToHex(pid));
 
 	for (auto hidDevicePath : this->getHidDevicePathList()) {
         //std::cout << hidDevicePath << std::endl;
@@ -104,4 +104,26 @@ bool HidDevice::writeHidReport(uint8_t data[], uint8_t len)
     memcpy(&report[0], data, len);
     DWORD bytesWritten;
     return WriteFile(hidHandle, report, 20, &bytesWritten, NULL);
+}
+
+bool HidDevice::readHidReport(uint8_t data[], uint8_t *len)
+{
+    if (hidHandle == INVALID_HANDLE_VALUE || data == NULL || len == NULL) {
+        return false;
+    }
+
+    uint8_t report[65];
+    DWORD bytesRead = 0;
+    LPDWORD pBytesRead = 0;
+
+    bool res = ReadFile(hidHandle, report, 20, pBytesRead, NULL);
+    *len = bytesRead;
+
+    if (!res || bytesRead != 20) {
+        return false;
+    }
+
+    memcpy(data, report, bytesRead);
+
+    return true;
 }

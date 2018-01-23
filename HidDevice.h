@@ -32,6 +32,7 @@ class HidDevice : public QObject
 
 public:
     bool writeHidReport(uint8_t data[], uint8_t len);
+    bool readHidReport(uint8_t data[], uint8_t *len);
     bool open(uint16_t vid = 0xAAAA, uint16_t pid = 0xEEEE);
     bool setTxPower(int8_t txPowerDbm);
     bool setBatteryTestMode(bool isBatteryTestOn);
