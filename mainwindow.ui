@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
+    <width>800</width>
     <height>360</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>640</width>
+    <width>800</width>
     <height>360</height>
    </size>
   </property>
@@ -38,20 +38,6 @@
       <property name="sizeConstraint">
        <enum>QLayout::SetFixedSize</enum>
       </property>
-      <item row="2" column="1">
-       <widget class="QPushButton" name="pbDisconnect">
-        <property name="text">
-         <string>Disconnect</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="3">
-       <widget class="QPushButton" name="pbConnect">
-        <property name="text">
-         <string>Connect</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="3">
        <widget class="QLineEdit" name="leVid">
         <property name="sizePolicy">
@@ -131,6 +117,20 @@
         </property>
        </widget>
       </item>
+      <item row="2" column="3">
+       <widget class="QPushButton" name="pbConnect">
+        <property name="text">
+         <string>Connect</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPushButton" name="pbDisconnect">
+        <property name="text">
+         <string>Disconnect</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
@@ -147,6 +147,16 @@
       </item>
       <item>
        <widget class="QCustomPlot" name="qPltOx" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCustomPlot" name="qPltTemp" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
           <horstretch>0</horstretch>

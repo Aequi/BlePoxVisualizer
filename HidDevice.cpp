@@ -1,6 +1,8 @@
 #include "HidDevice.h"
 #include <QDebug>
 
+
+
 std::vector<std::string> HidDevice::getHidDevicePathList()
 {
 	std::vector<std::string> hidDevicePathList;
@@ -45,6 +47,10 @@ std::string HidDevice::intToHex(uint16_t num)
 	return stream.str();
 }
 
+HidDevice::HidDevice()
+{
+
+}
 
 bool HidDevice::open(uint16_t vid, uint16_t pid)
 {
@@ -126,4 +132,33 @@ bool HidDevice::readHidReport(uint8_t data[], uint8_t *len)
     memcpy(data, report, bytesRead);
 
     return true;
+}
+
+void HidDevice::run()
+{
+    for(;;) {
+        if (open() == true) {
+            break;
+        }
+        Sleep(5000);
+    }
+    uint8_t data[2] = {0x0E, 0x01};
+    writeHidReport(data, sizeof(data));
+    for(;;) {
+        static uint8_t hidReport[65];
+        uint8_t length = 0;
+        if (readHidReport(hidReport, &length) == false) {
+            continue;
+        }
+        if (length == 20) {
+            emit hidDataReady(hidReport, length);
+        }
+    }
+}
+
+HidDevice::~HidDevice()
+{
+    uint8_t data[2] = {0x0E, 0x00};
+    writeHidReport(data, sizeof(data));
+    close();
 }

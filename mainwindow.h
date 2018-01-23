@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include <qcustomplot.h>
 #include "HidDevice.h"
-
+#include "stdint.h"
 
 namespace Ui {
 class MainWindow;
@@ -30,6 +30,8 @@ private slots:
     void on_pbDisconnect_clicked();
 
     void on_pbStartStop_clicked();
+
+    void on_hidDataReady(uint8_t data[], uint8_t length);
 
 private:
     Ui::MainWindow *ui;

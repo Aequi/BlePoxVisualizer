@@ -87,9 +87,18 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->qPltOx->graph(0)->setPen(QPen(Qt::cyan));
     ui->qPltOx->yAxis->setRange(-1.0, 1.0);
 
+    ui->qPltTemp->addGraph();
+    ui->qPltTemp->graph(0)->setName("T");
+    ui->qPltTemp->graph(0)->setPen(QPen(Qt::red));
+    ui->qPltTemp->yAxis->setRange(-1.0, 1.0);
 
     setPlotStyle(ui->qPltHr);
     setPlotStyle(ui->qPltOx);
+    setPlotStyle(ui->qPltTemp);
+
+    QThread *poxThread = new QThread;
+    hidDevice->moveToThread(poxThread);
+    QObject::connect(hidDevice, &HidDevice::hidDataReady, this, &MainWindow::on_hidDataReady);
 }
 
 MainWindow::~MainWindow()
@@ -125,4 +134,29 @@ void MainWindow::on_pbDisconnect_clicked()
 void MainWindow::on_pbStartStop_clicked()
 {
 
+}
+
+void MainWindow::on_hidDataReady(uint8_t data[], uint8_t length)
+{
+    if (length != 20) {
+        return;
+    }
+
+    uint16_t reData[4] = {data[0] | data[1] << 8, data[4] | data[5] << 8, data[8] | data[9] << 8, data[12] | data[13] << 8};
+    uint16_t irData[4] = {data[2] | data[3] << 8, data[6] | data[7] << 8, data[10] | data[11] << 8, data[14] | data[15] << 8};
+    float temperature = ((float) (int8_t) data[16]) - ((data[17] & 0x0F) * 0.0625);
+    static QList<double> hr;
+    static QList<double> ox;
+    static QList<double> temp;
+    static QList<double> time;
+
+    QVector<double> timeVector = QVector<double>::fromList(time);
+
+    ui->qPltHr->graph(0)->setData(timeVector, QVector<double>::fromList(hr));
+    ui->qPltOx->graph(0)->setData(timeVector, QVector<double>::fromList(ox));
+    ui->qPltTemp->graph(0)->setData(timeVector, QVector<double>::fromList(temp));
+
+    ui->qPltHr->replot();
+    ui->qPltOx->replot();
+    ui->qPltTemp->replot();
 }
