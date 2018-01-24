@@ -73,37 +73,37 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->lblVid->setStyleSheet("QLabel {color : green;}");
     ui->lblPid->setStyleSheet("QLabel {color : green;}");
 
-    hidDevice = new HidDevice;
+    hidDevice = new HidDevice();
     ui->lableConnectionState->setStyleSheet("QLabel {color : red;}");
     ui->lableConnectionState->setText("Disconnected");
 
     ui->qPltHr->addGraph();
     ui->qPltHr->graph(0)->setName("Hr");
     ui->qPltHr->graph(0)->setPen(QPen(Qt::green));
-    ui->qPltHr->yAxis->setRange(-1.0, 1.0);
+    ui->qPltHr->yAxis->setRange(-0.1, 1.5);
 
     ui->qPltOx->addGraph();
     ui->qPltOx->graph(0)->setName("Ox");
     ui->qPltOx->graph(0)->setPen(QPen(Qt::cyan));
-    ui->qPltOx->yAxis->setRange(-1.0, 1.0);
+    ui->qPltOx->yAxis->setRange(-0.1, 1.5);
 
     ui->qPltTemp->addGraph();
     ui->qPltTemp->graph(0)->setName("T");
     ui->qPltTemp->graph(0)->setPen(QPen(Qt::red));
-    ui->qPltTemp->yAxis->setRange(-1.0, 1.0);
+    ui->qPltTemp->yAxis->setRange(-10.0, 60.0);
 
     setPlotStyle(ui->qPltHr);
     setPlotStyle(ui->qPltOx);
     setPlotStyle(ui->qPltTemp);
 
-    QThread *poxThread = new QThread;
-    hidDevice->moveToThread(poxThread);
     QObject::connect(hidDevice, &HidDevice::hidDataReady, this, &MainWindow::on_hidDataReady);
+    hidDevice->start();
+
 }
 
 MainWindow::~MainWindow()
 {
-    hidDevice->close();
+    hidDevice->exit();
     delete ui;
 }
 
@@ -136,25 +136,94 @@ void MainWindow::on_pbStartStop_clicked()
 
 }
 
-void MainWindow::on_hidDataReady(uint8_t data[], uint8_t length)
+void MainWindow::on_hidDataReady(quint8 *data, quint8 length)
 {
     if (length != 20) {
         return;
     }
+    static uint8_t cntr = 0;
+    static uint32_t cntr2 = 0;
+    static bool isFirstRun = false;
+    if (!isFirstRun) {
+        isFirstRun = true;
+        cntr = data[19];
+    }
 
-    uint16_t reData[4] = {data[0] | data[1] << 8, data[4] | data[5] << 8, data[8] | data[9] << 8, data[12] | data[13] << 8};
-    uint16_t irData[4] = {data[2] | data[3] << 8, data[6] | data[7] << 8, data[10] | data[11] << 8, data[14] | data[15] << 8};
+    if (cntr != data[19]) {
+        qDebug() << "Packet lost!" << cntr2++;
+        cntr = data[19];
+    }
+    cntr++;
+    static double timeR = 0.0;
+    data++;
+    uint32_t reData[4];
+    reData[0] = ((uint32_t) data[0] << 8)  | ((uint32_t) (data[1]));
+    reData[1] = ((uint32_t) data[4] << 8)  | ((uint32_t) (data[5]));
+    reData[2] = ((uint32_t) data[8] << 8)  | ((uint32_t) (data[9]));
+    reData[3] = ((uint32_t) data[12] << 8) | ((uint32_t) (data[13]));
+    uint32_t irData[4];
+    irData[0] = ((uint32_t) data[2] << 8)  | ((uint32_t) (data[3]));
+    irData[1] = ((uint32_t) data[6] << 8)  | ((uint32_t) (data[7]));
+    irData[2] = ((uint32_t) data[10] << 8) | ((uint32_t) (data[11]));
+    irData[3] = ((uint32_t) data[14] << 8) | ((uint32_t) (data[15]));
+
     float temperature = ((float) (int8_t) data[16]) - ((data[17] & 0x0F) * 0.0625);
     static QList<double> hr;
     static QList<double> ox;
     static QList<double> temp;
     static QList<double> time;
 
+    if (time.size() >= 500) {
+        hr.pop_front();
+        hr.pop_front();
+        hr.pop_front();
+        hr.pop_front();
+        ox.pop_front();
+        ox.pop_front();
+        ox.pop_front();
+        ox.pop_front();
+        temp.pop_front();
+        temp.pop_front();
+        temp.pop_front();
+        temp.pop_front();
+        time.pop_front();
+        time.pop_front();
+        time.pop_front();
+        time.pop_front();
+    }
+
+    hr.push_back((double) reData[0] / 65535.0);
+    hr.push_back((double) reData[1] / 65535.0);
+    hr.push_back((double) reData[2] / 65535.0);
+    hr.push_back((double) reData[3] / 65535.0);
+
+    ox.push_back((double) irData[0] / 65535.0);
+    ox.push_back((double) irData[1] / 65535.0);
+    ox.push_back((double) irData[2] / 65535.0);
+    ox.push_back((double) irData[3] / 65535.0);
+
+    temp.push_back((double) temperature);
+    temp.push_back((double) temperature);
+    temp.push_back((double) temperature);
+    temp.push_back((double) temperature);
+
+    time.push_back(timeR + 0.00);
+    time.push_back(timeR + 0.01);
+    time.push_back(timeR + 0.02);
+    time.push_back(timeR + 0.03);
+    timeR += 0.04;
+
     QVector<double> timeVector = QVector<double>::fromList(time);
 
     ui->qPltHr->graph(0)->setData(timeVector, QVector<double>::fromList(hr));
+    ui->qPltHr->xAxis->setRange(time.front(), 5.0, Qt::AlignLeft);
     ui->qPltOx->graph(0)->setData(timeVector, QVector<double>::fromList(ox));
+    ui->qPltOx->xAxis->setRange(time.front(), 5.0, Qt::AlignLeft);
     ui->qPltTemp->graph(0)->setData(timeVector, QVector<double>::fromList(temp));
+    ui->qPltTemp->xAxis->setRange(time.front(), 5.0, Qt::AlignLeft);
+
+    ui->qPltHr->rescaleAxes();
+    ui->qPltOx->rescaleAxes();
 
     ui->qPltHr->replot();
     ui->qPltOx->replot();

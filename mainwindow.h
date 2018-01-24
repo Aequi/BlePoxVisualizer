@@ -31,7 +31,7 @@ private slots:
 
     void on_pbStartStop_clicked();
 
-    void on_hidDataReady(uint8_t data[], uint8_t length);
+    void on_hidDataReady(quint8 *data, quint8 length);
 
 private:
     Ui::MainWindow *ui;

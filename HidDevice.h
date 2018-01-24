@@ -21,7 +21,7 @@
 #include <QVector>
 
 
-class HidDevice : public QObject
+class HidDevice : public QThread
 {
     Q_OBJECT
 
@@ -37,10 +37,9 @@ public:
     bool open(uint16_t vid = 0xAAAA, uint16_t pid = 0xEEEE);
     void close(void);
     void hidDeviceProcess(void);
-    HidDevice();
 
  signals:
-    void hidDataReady(uint8_t data[], uint8_t length);
+    void hidDataReady(quint8 *data, quint8 length);
 
 public slots:
     void run();

@@ -47,17 +47,12 @@ std::string HidDevice::intToHex(uint16_t num)
 	return stream.str();
 }
 
-HidDevice::HidDevice()
-{
-
-}
-
 bool HidDevice::open(uint16_t vid, uint16_t pid)
 {
-    std::string str("\\\\?\\hid#vid_" + HidDevice::intToHex(vid) + "&pid_" + HidDevice::intToHex(pid));
+    std::string str("\\\\?\\hid#{00001812-0000-1000-8000-00805f9b34fb}_dev_vid&02" + HidDevice::intToHex(vid) + "_pid&" + HidDevice::intToHex(pid));
 
 	for (auto hidDevicePath : this->getHidDevicePathList()) {
-        //std::cout << hidDevicePath << std::endl;
+        std::cout << hidDevicePath << std::endl;
 		if (hidDevicePath.find(str) == 0) {
 
 			hidHandle = CreateFile(hidDevicePath.c_str(), GENERIC_READ | GENERIC_WRITE,
@@ -89,13 +84,14 @@ bool HidDevice::open(uint16_t vid, uint16_t pid)
 			}
 		}
 	}
-
+    hidHandle = INVALID_HANDLE_VALUE;
 	return false;
 }
 
 void HidDevice::close(void)
 {
-    CloseHandle(hidHandle);
+    if (hidHandle != INVALID_HANDLE_VALUE)
+        CloseHandle(hidHandle);
     hidHandle = INVALID_HANDLE_VALUE;
 }
 
@@ -120,7 +116,7 @@ bool HidDevice::readHidReport(uint8_t data[], uint8_t *len)
 
     uint8_t report[65];
     DWORD bytesRead = 0;
-    LPDWORD pBytesRead = 0;
+    LPDWORD pBytesRead = &bytesRead;
 
     bool res = ReadFile(hidHandle, report, 20, pBytesRead, NULL);
     *len = bytesRead;
@@ -145,8 +141,8 @@ void HidDevice::run()
     uint8_t data[2] = {0x0E, 0x01};
     writeHidReport(data, sizeof(data));
     for(;;) {
-        static uint8_t hidReport[65];
-        uint8_t length = 0;
+        static quint8 hidReport[65];
+        quint8 length = 0;
         if (readHidReport(hidReport, &length) == false) {
             continue;
         }
