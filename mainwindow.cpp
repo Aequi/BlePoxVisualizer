@@ -51,7 +51,7 @@ void MainWindow::setPlotStyle(QCustomPlot *plot)
     plot->xAxis2->setAutoTickStep(false);
     plot->xAxis2->setTickStep(1.0);
     plot->xAxis2->setTicks(true);
-    plot->xAxis2->setRange(0, 5, Qt::AlignRight);
+    plot->xAxis2->setRange(0, 10.0, Qt::AlignRight);
 
     plot->setBackground(QBrush(Qt::black));
 }
@@ -156,11 +156,13 @@ void MainWindow::on_hidDataReady(quint8 *data, quint8 length)
     cntr++;
     static double timeR = 0.0;
     data++;
+
     uint32_t reData[4];
     reData[0] = ((uint32_t) data[0] << 8)  | ((uint32_t) (data[1]));
     reData[1] = ((uint32_t) data[4] << 8)  | ((uint32_t) (data[5]));
     reData[2] = ((uint32_t) data[8] << 8)  | ((uint32_t) (data[9]));
     reData[3] = ((uint32_t) data[12] << 8) | ((uint32_t) (data[13]));
+
     uint32_t irData[4];
     irData[0] = ((uint32_t) data[2] << 8)  | ((uint32_t) (data[3]));
     irData[1] = ((uint32_t) data[6] << 8)  | ((uint32_t) (data[7]));
@@ -173,54 +175,42 @@ void MainWindow::on_hidDataReady(quint8 *data, quint8 length)
     static QList<double> temp;
     static QList<double> time;
 
-    if (time.size() >= 500) {
-        hr.pop_front();
-        hr.pop_front();
-        hr.pop_front();
-        hr.pop_front();
-        ox.pop_front();
-        ox.pop_front();
-        ox.pop_front();
-        ox.pop_front();
-        temp.pop_front();
-        temp.pop_front();
-        temp.pop_front();
-        temp.pop_front();
-        time.pop_front();
-        time.pop_front();
-        time.pop_front();
-        time.pop_front();
+    if (time.size() >= 1000) {
+        for (int cntr = 0; cntr < 4; cntr++) {
+            hr.pop_front();
+            ox.pop_front();
+            temp.pop_front();
+            time.pop_front();
+        }
+    }
+    static double pvalR = 0, valR = 0;
+    static double pvalIr = 0, valIr = 0;
+
+    for (int cntr = 0; cntr < 4; cntr++) {
+        valR = ((65535.0 - (double) reData[cntr]) / 65535.0);
+        valR = 0.7 * pvalR + 0.3 * valR;
+        hr.push_back(valR);
+        pvalR = valR;
+
+        valIr = ((65535.0 - (double) irData[0]) / 65535.0);
+        valIr = 0.7 * pvalIr + 0.3 * valIr;
+        ox.push_back(valIr);
+        pvalIr = valIr;
+
+        temp.push_back((double) temperature);
+        time.push_back(timeR + 0.01 * (double) cntr);
     }
 
-    hr.push_back((65535.0 - (double) reData[0]) / 65535.0);
-    hr.push_back((65535.0 - (double) reData[1]) / 65535.0);
-    hr.push_back((65535.0 - (double) reData[2]) / 65535.0);
-    hr.push_back((65535.0 - (double) reData[3]) / 65535.0);
-
-    ox.push_back((65535.0 - (double) irData[0]) / 65535.0);
-    ox.push_back((65535.0 - (double) irData[1]) / 65535.0);
-    ox.push_back((65535.0 - (double) irData[2]) / 65535.0);
-    ox.push_back((65535.0 - (double) irData[3]) / 65535.0);
-
-    temp.push_back((double) temperature);
-    temp.push_back((double) temperature);
-    temp.push_back((double) temperature);
-    temp.push_back((double) temperature);
-
-    time.push_back(timeR + 0.00);
-    time.push_back(timeR + 0.01);
-    time.push_back(timeR + 0.02);
-    time.push_back(timeR + 0.03);
     timeR += 0.04;
 
     QVector<double> timeVector = QVector<double>::fromList(time);
 
     ui->qPltHr->graph(0)->setData(timeVector, QVector<double>::fromList(hr));
-    ui->qPltHr->xAxis->setRange(time.front(), 5.0, Qt::AlignLeft);
+    ui->qPltHr->xAxis->setRange(time.front(), 10.0, Qt::AlignLeft);
     ui->qPltOx->graph(0)->setData(timeVector, QVector<double>::fromList(ox));
-    ui->qPltOx->xAxis->setRange(time.front(), 5.0, Qt::AlignLeft);
+    ui->qPltOx->xAxis->setRange(time.front(), 10.0, Qt::AlignLeft);
     ui->qPltTemp->graph(0)->setData(timeVector, QVector<double>::fromList(temp));
-    ui->qPltTemp->xAxis->setRange(time.front(), 5.0, Qt::AlignLeft);
+    ui->qPltTemp->xAxis->setRange(time.front(), 10.0, Qt::AlignLeft);
 
     ui->qPltHr->rescaleAxes();
     ui->qPltOx->rescaleAxes();
