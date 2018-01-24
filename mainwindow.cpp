@@ -192,15 +192,15 @@ void MainWindow::on_hidDataReady(quint8 *data, quint8 length)
         time.pop_front();
     }
 
-    hr.push_back((double) reData[0] / 65535.0);
-    hr.push_back((double) reData[1] / 65535.0);
-    hr.push_back((double) reData[2] / 65535.0);
-    hr.push_back((double) reData[3] / 65535.0);
+    hr.push_back((65535.0 - (double) reData[0]) / 65535.0);
+    hr.push_back((65535.0 - (double) reData[1]) / 65535.0);
+    hr.push_back((65535.0 - (double) reData[2]) / 65535.0);
+    hr.push_back((65535.0 - (double) reData[3]) / 65535.0);
 
-    ox.push_back((double) irData[0] / 65535.0);
-    ox.push_back((double) irData[1] / 65535.0);
-    ox.push_back((double) irData[2] / 65535.0);
-    ox.push_back((double) irData[3] / 65535.0);
+    ox.push_back((65535.0 - (double) irData[0]) / 65535.0);
+    ox.push_back((65535.0 - (double) irData[1]) / 65535.0);
+    ox.push_back((65535.0 - (double) irData[2]) / 65535.0);
+    ox.push_back((65535.0 - (double) irData[3]) / 65535.0);
 
     temp.push_back((double) temperature);
     temp.push_back((double) temperature);
