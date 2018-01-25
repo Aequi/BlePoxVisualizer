@@ -1,11 +1,10 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include "windows.h"
-#include <Winuser.h>
 #include <QDebug>
 #include <QThread>
 #include <QVector>
+#include <QList>
 #include "stdint.h"
 #include "HidDevice.h"
 
@@ -65,13 +64,9 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowTitle("BlePoxVisualizer");
     QPalette pal = palette();
 
-    pal.setColor(QPalette::Background, Qt::lightGray);
+    pal.setColor(QPalette::Background, Qt::black);
     ui->centralWidget->setAutoFillBackground(true);
     ui->centralWidget->setPalette(pal);
-
-    ui->lblDevice->setStyleSheet("QLabel {color : green;}");
-    ui->lblVid->setStyleSheet("QLabel {color : green;}");
-    ui->lblPid->setStyleSheet("QLabel {color : green;}");
 
     hidDevice = new HidDevice();
     ui->lableConnectionState->setStyleSheet("QLabel {color : red;}");
@@ -98,7 +93,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QObject::connect(hidDevice, &HidDevice::hidDataReady, this, &MainWindow::on_hidDataReady);
     hidDevice->start();
-
 }
 
 MainWindow::~MainWindow()
@@ -107,43 +101,16 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_pbConnect_clicked()
-{
-    bool isOk;
-
-    if (hidDevice->open(ui->leVid->text().toUInt(&isOk, 16), ui->lePid->text().toUInt(&isOk, 16)) != true) {
-        QMessageBox msgBox;
-        msgBox.setText("Failed to open device!");
-        msgBox.exec();
-        hidDevice->close();
-        ui->lableConnectionState->setText("Disconnected");
-        ui->lableConnectionState->setStyleSheet("QLabel {color : red;}");
-        return;
-    }
-    ui->lableConnectionState->setText("Connected");
-    ui->lableConnectionState->setStyleSheet("QLabel {color : green;}");
-}
-
-void MainWindow::on_pbDisconnect_clicked()
-{
-    hidDevice->close();
-    ui->lableConnectionState->setStyleSheet("QLabel {color : red;}");
-    ui->lableConnectionState->setText("Disconnected");
-}
-
-void MainWindow::on_pbStartStop_clicked()
-{
-
-}
-
 void MainWindow::on_hidDataReady(quint8 *data, quint8 length)
 {
-    if (length != 20) {
+    if (length != 20 || data[0] != 0x0E) {
         return;
     }
+
     static uint8_t cntr = 0;
     static uint32_t cntr2 = 0;
     static bool isFirstRun = false;
+
     if (!isFirstRun) {
         isFirstRun = true;
         cntr = data[19];
@@ -154,9 +121,9 @@ void MainWindow::on_hidDataReady(quint8 *data, quint8 length)
         cntr = data[19];
     }
     cntr++;
-    static double timeR = 0.0;
     data++;
 
+    static double timeR = 0.0;
     uint32_t reData[4];
     reData[0] = ((uint32_t) data[0] << 8)  | ((uint32_t) (data[1]));
     reData[1] = ((uint32_t) data[4] << 8)  | ((uint32_t) (data[5]));
@@ -183,19 +150,35 @@ void MainWindow::on_hidDataReady(quint8 *data, quint8 length)
             time.pop_front();
         }
     }
-    static double pvalR = 0, valR = 0;
-    static double pvalIr = 0, valIr = 0;
 
+    static double pvalRl = 0, valRl = 0;
+    static double pvalIrl = 0, valIrl = 0;
+    static double pvalRh = 0, valRh = 0;
+    static double pvalIrh = 0, valIrh = 0;
+
+    // Normalize and pre filter
     for (int cntr = 0; cntr < 4; cntr++) {
-        valR = ((65535.0 - (double) reData[cntr]) / 65535.0);
-        valR = 0.7 * pvalR + 0.3 * valR;
-        hr.push_back(valR);
-        pvalR = valR;
+        valRl = ((65535.0 - (double) reData[cntr]) / 65535.0);
+        valRl = 0.7 * pvalRl + 0.3 * valRl;
 
-        valIr = ((65535.0 - (double) irData[0]) / 65535.0);
-        valIr = 0.7 * pvalIr + 0.3 * valIr;
-        ox.push_back(valIr);
-        pvalIr = valIr;
+        double f = valRl + 0.95 * pvalRh;
+        valRh = f - pvalRh;
+
+        hr.push_back(valRh);
+
+        pvalRl = valRl;
+        pvalRh = f;
+
+        valIrl = ((65535.0 - (double) irData[0]) / 65535.0);
+        valIrl = 0.7 * pvalIrl + 0.3 * valIrl;
+
+        double f1 = valIrl + 0.95 * pvalIrh;
+        valIrh = f - pvalRh;
+
+        ox.push_back(valIrl);
+
+        pvalIrl = valIrl;
+        pvalIrh = f1;
 
         temp.push_back((double) temperature);
         time.push_back(timeR + 0.01 * (double) cntr);

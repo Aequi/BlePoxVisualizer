@@ -4,18 +4,14 @@
 #include <QMainWindow>
 #include <qcustomplot.h>
 #include "HidDevice.h"
-#include "stdint.h"
 
 namespace Ui {
 class MainWindow;
 }
 
-class QCustomPlot;
-
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-
 
 public:
     explicit MainWindow(QWidget *parent = 0);
@@ -25,11 +21,6 @@ public:
     void setPlotStyle(QCustomPlot *plot);
 
 private slots:
-    void on_pbConnect_clicked();
-
-    void on_pbDisconnect_clicked();
-
-    void on_pbStartStop_clicked();
 
     void on_hidDataReady(quint8 *data, quint8 length);
 

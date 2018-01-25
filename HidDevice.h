@@ -9,8 +9,6 @@
 #include <vector>
 #include <string>
 #include <iomanip>
-#include <sstream>
-#include <mutex>
 
 #include <QThread>
 #include <QObject>
