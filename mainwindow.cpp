@@ -68,10 +68,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->centralWidget->setAutoFillBackground(true);
     ui->centralWidget->setPalette(pal);
 
-    hidDevice = new HidDevice();
-    ui->lableConnectionState->setStyleSheet("QLabel {color : red;}");
-    ui->lableConnectionState->setText("Disconnected");
-
     ui->qPltHr->addGraph();
     ui->qPltHr->graph(0)->setName("Hr");
     ui->qPltHr->graph(0)->setPen(QPen(Qt::green));
@@ -91,6 +87,7 @@ MainWindow::MainWindow(QWidget *parent) :
     setPlotStyle(ui->qPltOx);
     setPlotStyle(ui->qPltTemp);
 
+    hidDevice = new HidDevice();
     QObject::connect(hidDevice, &HidDevice::hidDataReady, this, &MainWindow::on_hidDataReady);
     hidDevice->start();
 }
@@ -173,9 +170,9 @@ void MainWindow::on_hidDataReady(quint8 *data, quint8 length)
         valIrl = 0.7 * pvalIrl + 0.3 * valIrl;
 
         double f1 = valIrl + 0.95 * pvalIrh;
-        valIrh = f - pvalRh;
+        valIrh = f1 - pvalIrh;
 
-        ox.push_back(valIrl);
+        ox.push_back(valIrh);
 
         pvalIrl = valIrl;
         pvalIrh = f1;

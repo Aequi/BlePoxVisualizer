@@ -1,4 +1,5 @@
 #include "HidDevice.h"
+#include <sstream>
 #include <QDebug>
 
 
